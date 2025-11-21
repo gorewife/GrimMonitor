@@ -1,40 +1,51 @@
+def emit_poll_update():
+    # Emits a Socket.IO event to all clients to refresh the poll chart
+    socketio.emit('poll_update')
 from flask import Flask, render_template, send_file
+from flask_socketio import SocketIO, emit
+
 import matplotlib.pyplot as plt
 import io
 import os
-import json
+import sqlite3
 
 app = Flask(__name__, static_url_path='/static', static_folder='static')
+socketio = SocketIO(app)
 
-# Example: path to your poll log (adjust as needed)
-POLL_LOG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../poll_log.json'))
+# Path to poll_stats.db inside GrimMonitor directory
+DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'poll_stats.db'))
 
 @app.route('/')
 def index():
-    # Check if poll_log.json exists and has data
+    # Check if poll_stats.db exists and has data
     has_data = False
-    if os.path.exists(POLL_LOG_PATH):
+    if os.path.exists(DB_PATH):
         try:
-            with open(POLL_LOG_PATH, 'r') as f:
-                poll_log = json.load(f)
-            if poll_log:
+            conn = sqlite3.connect(DB_PATH)
+            c = conn.cursor()
+            c.execute('SELECT COUNT(*) FROM poll_stats')
+            count = c.fetchone()[0]
+            if count > 0:
                 has_data = True
+            conn.close()
         except Exception:
             has_data = False
     return render_template('index.html', has_data=has_data)
 
 @app.route('/poll_chart.png')
 def poll_chart():
-    # Load poll log data
-    if os.path.exists(POLL_LOG_PATH):
+    # Load poll stats from SQLite database
+    poll_log = []
+    if os.path.exists(DB_PATH):
         try:
-            with open(POLL_LOG_PATH, 'r') as f:
-                poll_log = json.load(f)
+            conn = sqlite3.connect(DB_PATH)
+            c = conn.cursor()
+            c.execute('SELECT timestamp, total_votes FROM poll_stats ORDER BY timestamp ASC')
+            poll_log = c.fetchall()
+            conn.close()
         except Exception:
             poll_log = []
-    else:
-        poll_log = []
-    # poll_log is a list of [timestamp, total_votes]
+    # poll_log is a list of (timestamp, total_votes)
     if poll_log:
         timestamps, votes = zip(*poll_log)
         plt.style.use('dark_background')
@@ -58,4 +69,4 @@ def poll_chart():
     return send_file(buf, mimetype='image/png')
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", debug=True)
+    socketio.run(app, host="0.0.0.0", debug=True)

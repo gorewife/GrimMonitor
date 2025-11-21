@@ -1,3 +1,4 @@
+#!/usr/bin/env fish
 # Quick push script for GrimMonitor (fish shell)
 function gitquickpush
     set msg (string join ' ' $argv)

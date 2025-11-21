@@ -14,7 +14,27 @@
     </header>
     <div class="chart-container">
         {% if has_data %}
-            <img src="/poll_chart.png" alt="Poll Chart">
+            <img id="pollChart" src="/poll_chart.png" alt="Poll Chart">
+            <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+            <script src="/static/socket.js"></script>
+            <script>
+                // Auto-refresh the chart every 10 seconds
+                setInterval(function() {
+                    var img = document.getElementById('pollChart');
+                    if (img) {
+                        img.src = '/poll_chart.png?t=' + new Date().getTime();
+                    }
+                }, 10000); // 10 seconds
+
+                // WebSocket: refresh chart on poll_update event
+                var socket = io();
+                socket.on('poll_update', function() {
+                    var img = document.getElementById('pollChart');
+                    if (img) {
+                        img.src = '/poll_chart.png?t=' + new Date().getTime();
+                    }
+                });
+            </script>
         {% else %}
             <div style="text-align:center; padding: 40px 0; color: #aaa; font-size: 1.3rem;">
                 <p style="margin:0;">No poll data available yet.</p>

@@ -11,28 +11,45 @@ POLL_LOG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../p
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    # Check if poll_log.json exists and has data
+    has_data = False
+    if os.path.exists(POLL_LOG_PATH):
+        try:
+            with open(POLL_LOG_PATH, 'r') as f:
+                poll_log = json.load(f)
+            if poll_log:
+                has_data = True
+        except Exception:
+            has_data = False
+    return render_template('index.html', has_data=has_data)
 
 @app.route('/poll_chart.png')
 def poll_chart():
     # Load poll log data
     if os.path.exists(POLL_LOG_PATH):
-        with open(POLL_LOG_PATH, 'r') as f:
-            poll_log = json.load(f)
+        try:
+            with open(POLL_LOG_PATH, 'r') as f:
+                poll_log = json.load(f)
+        except Exception:
+            poll_log = []
     else:
         poll_log = []
     # poll_log is a list of [timestamp, total_votes]
     if poll_log:
         timestamps, votes = zip(*poll_log)
+        plt.style.use('dark_background')
+        plt.figure(figsize=(8, 4))
+        plt.plot(timestamps, votes, marker='o', color='#00bcd4')
+        plt.title('Poll Votes Over Time')
+        plt.xlabel('Timestamp')
+        plt.ylabel('Total Votes')
+        plt.tight_layout()
     else:
-        timestamps, votes = [], []
-    # Plot
-    plt.figure(figsize=(8, 4))
-    plt.plot(timestamps, votes, marker='o')
-    plt.title('Poll Votes Over Time')
-    plt.xlabel('Timestamp')
-    plt.ylabel('Total Votes')
-    plt.tight_layout()
+        plt.style.use('dark_background')
+        plt.figure(figsize=(8, 4))
+        plt.text(0.5, 0.5, 'No poll data available', ha='center', va='center', fontsize=18, color='#888')
+        plt.axis('off')
+        plt.tight_layout()
     # Save to buffer
     buf = io.BytesIO()
     plt.savefig(buf, format='png')

@@ -13,7 +13,14 @@
         <p>Minimal. Monochrome. Artsy.</p>
     </header>
     <div class="chart-container">
-        <img src="/poll_chart.png" alt="Poll Chart">
+        {% if has_data %}
+            <img src="/poll_chart.png" alt="Poll Chart">
+        {% else %}
+            <div style="text-align:center; padding: 40px 0; color: #aaa; font-size: 1.3rem;">
+                <p style="margin:0;">No poll data available yet.</p>
+                <p style="margin:0;">Run a poll in your Discord server to see stats here!</p>
+            </div>
+        {% endif %}
     </div>
     <footer>
         &copy; 2025 Your Discord Bot Dashboard
